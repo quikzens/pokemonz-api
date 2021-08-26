@@ -25,8 +25,8 @@ exports.register = async (req, res) => {
       })
     }
 
-    // check whether email user is exist in database,
-    // if yes, return the user data from db, along with message 'email already registered'
+    // check whether username is exist in database,
+    // if yes, return the user data from db, along with message 'username already registered'
     // if not, next
     const isUsernameExist = await User.findOne({
       where: {
