@@ -1,4 +1,5 @@
 const { Exchange, Pokemon, User } = require('../../db/models')
+const { Op } = require('sequelize')
 const send = require('../utils/response')
 
 exports.createExchange = async (req, res) => {
@@ -19,8 +20,13 @@ exports.createExchange = async (req, res) => {
 }
 
 exports.getExchanges = async (req, res) => {
+  const { userId } = req
+
   try {
-    const exchanges = await Exchange.findAll({
+    let exchanges = await Exchange.findAll({
+      where: {
+        [Op.not]: [{ exchangeOwner: userId }],
+      },
       include: [
         {
           model: Pokemon,
@@ -48,6 +54,26 @@ exports.getExchanges = async (req, res) => {
         ],
       },
     })
+
+    exchanges = JSON.parse(JSON.stringify(exchanges))
+    exchanges = await Promise.all(
+      exchanges.map(async (exchange) => {
+        const id = exchange.wantedPokemon
+        let wantedPokemon = await Pokemon.findOne({
+          where: {
+            pokemonId: id,
+          },
+          attributes: {
+            exclude: ['createdAt', 'updatedAt', 'UserId'],
+          },
+        })
+
+        return Promise.resolve({
+          ...exchange,
+          wantedPokemon,
+        })
+      })
+    )
 
     res.send({ status: 'success', exchanges })
   } catch (err) {
@@ -158,6 +184,70 @@ exports.acceptExchange = async (req, res) => {
     res.send({
       status: 'Success exchange your pokemon!',
     })
+  } catch (err) {
+    console.log(err)
+    send.serverError(res)
+  }
+}
+
+exports.getMyExchange = async (req, res) => {
+  const { userId } = req
+
+  try {
+    let exchange = await Exchange.findOne({
+      where: {
+        exchangeOwner: userId,
+      },
+      include: [
+        {
+          model: Pokemon,
+          as: 'pokemon',
+          attributes: {
+            exclude: ['createdAt', 'updatedAt', 'UserId'],
+          },
+        },
+        {
+          model: User,
+          as: 'user',
+          attributes: {
+            exclude: ['createdAt', 'updatedAt', 'password'],
+          },
+        },
+      ],
+      attributes: {
+        exclude: [
+          'PokemonId',
+          'UserId',
+          'createdAt',
+          'updatedAt',
+          'exchangedPokemon',
+          'exchangeOwner',
+        ],
+      },
+    })
+
+    exchange = JSON.parse(JSON.stringify(exchange))
+
+    if (exchange) {
+      const id = exchange.wantedPokemon
+      let wantedPokemon = await Pokemon.findOne({
+        where: {
+          pokemonId: id,
+        },
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'UserId'],
+        },
+      })
+
+      exchange = {
+        ...exchange,
+        wantedPokemon,
+      }
+    } else {
+      exchange = {}
+    }
+
+    res.send({ status: 'success', exchange })
   } catch (err) {
     console.log(err)
     send.serverError(res)

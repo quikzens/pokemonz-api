@@ -55,6 +55,7 @@ exports.register = async (req, res) => {
     )
 
     send.data(res, {
+      username: userData.username,
       token,
     })
   } catch (err) {
@@ -114,6 +115,7 @@ exports.login = async (req, res) => {
     )
 
     send.data(res, {
+      username: userData.username,
       token,
     })
   } catch (err) {

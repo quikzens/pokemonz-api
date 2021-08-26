@@ -1,4 +1,5 @@
 const { Pokemon } = require('../../db/models')
+const { Op } = require('sequelize')
 const fetch = require('node-fetch')
 const send = require('../utils/response')
 
@@ -40,8 +41,7 @@ exports.catchPokemon = async (req, res) => {
 
   const addPokemon = async (res, userId) => {
     try {
-      // const randomNumber = Math.floor(Math.random() * (51 - 1) + 1)
-      const randomNumber = 21
+      const randomNumber = Math.floor(Math.random() * (51 - 1) + 1)
 
       // check pokemon
       let checkPokemon = await Pokemon.findOne({
@@ -105,16 +105,18 @@ exports.getPokemonDetail = async (req, res) => {
   try {
     const { id } = req.params
 
-    let pokemon = await Pokemon.findOne({
-      where: {
-        pokemonId: id,
-      },
-      attributes: {
-        exclude: ['createdAt', 'updatedAt', 'UserId'],
+    let response = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`)
+    let data = await response.json()
+
+    res.send({
+      status: 'success',
+      pokemon: {
+        name: data.name,
+        image: data.sprites.other['official-artwork'].front_default,
+        height: data.height,
+        abilities: data.abilities,
       },
     })
-
-    res.send({ status: 'success', pokemon })
   } catch (err) {
     console.log(err)
     send.serverError(res)
@@ -131,6 +133,26 @@ exports.getMyPokemons = async (req, res) => {
       },
       attributes: {
         exclude: ['createdAt', 'updatedAt', 'UserId'],
+      },
+    })
+
+    res.send({ status: 'success', pokemons })
+  } catch (err) {
+    console.log(err)
+    send.serverError(res)
+  }
+}
+
+exports.getTakenPokemons = async (req, res) => {
+  const { userId } = req
+
+  try {
+    let pokemons = await Pokemon.findAll({
+      where: {
+        [Op.not]: [{ ownerId: userId }],
+      },
+      attributes: {
+        exclude: ['createdAt', 'updatedAt', 'UserId', 'image', 'ownerId'],
       },
     })
 

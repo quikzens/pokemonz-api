@@ -4,12 +4,14 @@
   "description": "Solution for PT. Batara Guru Teknologi fullstack developer challenges / test",
   "main": "server.js",
   "scripts": {
+    "client": "npm start --prefix ../client",
     "start": "node server",
-    "dev": "nodemon server"
+    "dev": "concurrently \"nodemon server\" \"npm run client\""
   },
   "author": "Febrian Amir",
   "license": "ISC",
   "devDependencies": {
+    "concurrently": "^6.2.1",
     "nodemon": "^2.0.12"
   },
   "dependencies": {
